@@ -22,7 +22,7 @@ find_package(rclcpp REQUIRED)
 # Find dependencies for ROS messages format
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-
+find_package(nav_msgs REQUIRED)
 
 # external from ROS
 find_package(Eigen3 REQUIRED)
@@ -42,9 +42,9 @@ if(BUILD_TESTING)
 endif()
 
 # Add executable the generate | name must be the same as the launch file
-add_executable(undistorded_node src/livox_repub.cpp)
+add_executable(undistorded_node src/livox_dedistortion.cpp)
 # Link dependencies to the executable | name must be the same as the launch file
-ament_target_dependencies(undistorded_node rclcpp std_msgs sensor_msgs)
+ament_target_dependencies(undistorded_node rclcpp std_msgs sensor_msgs nav_msgs)
 
 # install the executable
 install(TARGETS
