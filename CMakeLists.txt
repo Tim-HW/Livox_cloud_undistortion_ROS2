@@ -41,8 +41,17 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+
+
+include_directories(
+        include
+        ${EIGEN3_INCLUDE_DIR}
+        ${PCL_INCLUDE_DIRS}
+)
+
+
 # Add executable the generate | name must be the same as the launch file
-add_executable(undistorded_node src/livox_dedistortion.cpp)
+add_executable(undistorded_node src/livox_dedistortion.cpp src/gyr_int.cpp)
 # Link dependencies to the executable | name must be the same as the launch file
 ament_target_dependencies(undistorded_node rclcpp std_msgs sensor_msgs nav_msgs)
 

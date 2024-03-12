@@ -7,7 +7,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-#include <tf/transform_broadcaster.h>
+#include "tf2_ros/transform_broadcaster.h"
 
 #include <cmath>
 
@@ -15,6 +15,15 @@ using Sophus::SE3d;
 using Sophus::SO3d;
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudtmp(new pcl::PointCloud<pcl::PointXYZI>());
+
+
+float GetTimeStampROS2(auto msg)
+{
+  float sec  = msg->header.stamp.sec;
+  float nano = msg->header.stamp.nanosec;
+  
+  return sec + nano/1000000000;
+}
 
 ImuProcess::ImuProcess() : b_first_frame_(true), last_lidar_(nullptr), last_imu_(nullptr) 
 {
@@ -27,7 +36,7 @@ ImuProcess::~ImuProcess() {}
 
 void ImuProcess::Reset() 
 {
-  ROS_WARN("Reset ImuProcess");
+  std::cout <<"Reset ImuProcess"<< std::endl;
 
   b_first_frame_ = true;
   last_lidar_ = nullptr;
@@ -42,15 +51,15 @@ void ImuProcess::Reset()
 void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::Imu::ConstPtr> &v_imu) 
 {
   /// Reset gyr integrator
-  gyr_int_.Reset(last_lidar_->header.stamp.toSec(), last_imu_);
+  gyr_int_.Reset(GetTimeStampROS2(last_lidar_), last_imu_);
   /// And then integrate all the imu measurements
   for (const auto &imu : v_imu) {
     gyr_int_.Integrate(imu);
   }
-  ROS_INFO("integrate rotation angle [x, y, z]: [%.2f, %.2f, %.2f]",
-           gyr_int_.GetRot().angleX() * 180.0 / M_PI,
-           gyr_int_.GetRot().angleY() * 180.0 / M_PI,
-           gyr_int_.GetRot().angleZ() * 180.0 / M_PI);
+  //ROS_INFO("integrate rotation angle [x, y, z]: [%.2f, %.2f, %.2f]",
+  //         gyr_int_.GetRot().angleX() * 180.0 / M_PI,
+  //         gyr_int_.GetRot().angleY() * 180.0 / M_PI,
+  //         gyr_int_.GetRot().angleZ() * 180.0 / M_PI);
 }
 
 void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
@@ -89,12 +98,12 @@ void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
 
 void ImuProcess::Process(const MeasureGroup &meas) 
 {
-  ROS_ASSERT(!meas.imu.empty());
-  ROS_ASSERT(meas.lidar != nullptr);
-  ROS_DEBUG("Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
-            meas.lidar->header.stamp.toSec(), meas.imu.size(),
-            meas.imu.front()->header.stamp.toSec(),
-            meas.imu.back()->header.stamp.toSec());
+  //ROS_ASSERT(!meas.imu.empty());
+  //ROS_ASSERT(meas.lidar != nullptr);
+  //ROS_DEBUG("Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
+  //          meas.lidar->header.stamp.toSec(), meas.imu.size(),
+  //          meas.imu.front()->header.stamp.toSec(),
+  //          meas.imu.back()->header.stamp.toSec());
 
   auto pcl_in_msg = meas.lidar;
 
@@ -108,7 +117,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
     last_lidar_ = pcl_in_msg;
     last_imu_ = meas.imu.back();
 
-    ROS_WARN("The very first lidar frame");
+    //ROS_WARN("The very first lidar frame");
 
     /// Do nothing more, return
     b_first_frame_ = false;
@@ -122,7 +131,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
   //// Initial pose from IMU (with only rotation)
   SE3d T_l_c(gyr_int_.GetRot(), Eigen::Vector3d::Zero());
   dt_l_c_ =
-      pcl_in_msg->header.stamp.toSec() - last_lidar_->header.stamp.toSec();
+      GetTimeStampROS2(pcl_in_msg) - GetTimeStampROS2(last_lidar_);
   //// Get input pcl
   pcl::fromROSMsg(*pcl_in_msg, *cur_pcl_in_);
 

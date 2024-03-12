@@ -18,8 +18,8 @@ inline double rad2deg(double radians) { return radians * 180.0 / M_PI; }
 inline double deg2rad(double degrees) { return degrees * M_PI / 180.0; }
 
 struct MeasureGroup {
-  sensor_msgs::PointCloud2ConstPtr lidar;
-  std::vector<sensor_msgs::Imu::ConstPtr> imu;
+  sensor_msgs::msg::PointCloud2::ConstPtr lidar;
+  std::vector<sensor_msgs::msg::Imu::ConstPtr> imu;
 };
 
 class ImuProcess {
@@ -31,8 +31,8 @@ class ImuProcess {
 
   void Process(const MeasureGroup &meas);
   void Reset();
-
-  void IntegrateGyr(const std::vector<sensor_msgs::Imu::ConstPtr> &v_imu);
+  
+  void IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr> &v_imu);
 
   void UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out, double dt_be,
                     const Sophus::SE3d &Tbe);
@@ -40,7 +40,7 @@ class ImuProcess {
     T_i_l = Sophus::SE3d(q, t);
   }
 
-  ros::NodeHandle nh;
+  //ros::NodeHandle nh;
 
  private:
   /// Whether is the first frame, init for first frame
@@ -56,8 +56,8 @@ class ImuProcess {
   /// Transform form lidar to imu
   Sophus::SE3d T_i_l;
   //// For timestamp usage
-  sensor_msgs::PointCloud2ConstPtr last_lidar_;
-  sensor_msgs::ImuConstPtr last_imu_;
+  sensor_msgs::msg::PointCloud2::ConstPtr last_lidar_;
+  sensor_msgs::msg::Imu::ConstPtr last_imu_;
 
   /// For gyroscope integration
   GyrInt gyr_int_;

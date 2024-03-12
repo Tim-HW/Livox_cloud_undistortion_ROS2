@@ -24,6 +24,13 @@ double last_timestamp_imu = -1;
 std::deque<sensor_msgs::msg::Imu::ConstPtr> imu_buffer;
 
 
+float GetTimeStampROS2(auto msg)
+{
+  float sec  = msg->header.stamp.sec;
+  float nano = msg->header.stamp.nanosec;
+  
+  return sec + nano/1000000000;
+}
 
 
 bool SyncMeasure(MeasureGroup &measgroup) 
@@ -35,49 +42,34 @@ bool SyncMeasure(MeasureGroup &measgroup)
       return false;
   }
 
-  float sec = imu_buffer.front()->header.stamp.sec;
-  float nano = imu_buffer.front()->header.stamp.nanosec;
-
-  float timestamp_imu_front = sec + nano/1000000000; 
-
-  float sec = lidar_buffer.front()->header.stamp.sec;
-  float nano = lidar_buffer.front()->header.stamp.nanosec;
-
-  float timestamp_lidar_front = sec + nano/1000000000; 
-
-  float sec = imu_buffer.front()->header.stamp.sec;
-  float nano = imu_buffer.front()->header.stamp.nanosec;
-
-  float timestamp_imu_back = sec + nano/1000000000; 
 
 
-  if (timestamp_imu_front > timestamp_lidar_front) 
+  if (GetTimeStampROS2(imu_buffer.front()) > GetTimeStampROS2(lidar_buffer.front())) 
   {
       lidar_buffer.clear();
       std::cout << "clear lidar buffer, only happen at the beginning" << std::endl ;
       return false;
   }
 
-  if (timestamp_imu_back < timestamp_lidar_front) 
+  if (GetTimeStampROS2(imu_buffer.back()) < GetTimeStampROS2(lidar_buffer.front())) 
   {
       return false;
   }
-  
+
+
   /// Add lidar data, and pop from buffer
   measgroup.lidar = lidar_buffer.front();
   lidar_buffer.pop_front();
-  double lidar_time = measgroup.lidar->header.stamp.toSec();
+
+
+  double lidar_time = GetTimeStampROS2(measgroup.lidar);
 
   /// Add imu data, and pop from buffer
   measgroup.imu.clear();
   int imu_cnt = 0;
   for (const auto &imu : imu_buffer) 
   {   
-      float sec   = imu->header.stamp.sec;
-      float nano  = imu->header.stamp.nanosec;
-      float timestamp_imu = sec + nano/1000000000;
-      
-      double imu_time = timestamp_imu;
+      double imu_time = GetTimeStampROS2(imu);
       
       if (imu_time <= lidar_time) 
       {
@@ -89,17 +81,19 @@ bool SyncMeasure(MeasureGroup &measgroup)
   {
       imu_buffer.pop_front();
   }
-  // ROS_DEBUG("add %d imu msg", imu_cnt);
+  
+  std::cout << "add" << imu_cnt << "imu msg";
 
   return true;
 }
+
 
 
 void ProcessLoop(std::shared_ptr<ImuProcess> p_imu) 
 {
   std::cout << "Start ProcessLoop"<< std::endl;
   // 1000 Hz
-  rclcpp::Rate(1000);
+  rclcpp::Rate r(1000);
   
   while (rclcpp::ok()) 
   {
@@ -127,7 +121,6 @@ void ProcessLoop(std::shared_ptr<ImuProcess> p_imu)
   }
 }
 
-
 /* This example creates a subclass of Node and uses std::bind() to register a
 * member function as a callback from the timer. */
 
@@ -149,22 +142,12 @@ class MinimalSubscriber : public rclcpp::Node
 
     }
 
-    float get_timetamps(auto msg)
-    {
-      // Get timestamp
-      float sec = msg->header.stamp.sec;
-      float nano = msg->header.stamp.nanosec;
-
-      return sec + nano/1000000000; 
-    }
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) const
     { 
-            // Get timestamp
-      float sec = msg->header.stamp.sec;
-      float nano = msg->header.stamp.nanosec;
 
-      float timestamp = sec + nano/1000000000; 
+      // Get timestamp
+      float timestamp = GetTimeStampROS2(msg); 
 
       std::cout  << "get IMU at time:" << timestamp << std::endl;
 
@@ -191,11 +174,7 @@ class MinimalSubscriber : public rclcpp::Node
 
     void pointcloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) const
     { 
-      // Get timestamp
-      float sec = msg->header.stamp.sec;
-      float nano = msg->header.stamp.nanosec;
-
-      float timestamp = sec + nano/1000000000; 
+      float timestamp = GetTimeStampROS2(msg);
       // Display it
       std::cout  << "get point cloud at time:" << timestamp << std::endl;
       
@@ -217,23 +196,59 @@ class MinimalSubscriber : public rclcpp::Node
     
     }
 
-
-
   
     std::string pointcloud_topic = "/livox/lidar";
     std::string imu_topic        = "/livox/imu";
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr  sub_pointcloud;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr          sub_imu;
 
-   
     
 };
 
 int main(int argc, char * argv[])
 {
+
+  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
+
+
   rclcpp::init(argc, argv);
-  
   rclcpp::spin(std::make_shared<MinimalSubscriber>());
+
+  /*
+  std::vector<double> vec;
+  if(nh.getParam("/ExtIL", vec) )
+  {
+      Eigen::Quaternion<double> q_il;
+      Eigen::Vector3d t_il;
+      q_il.w() = vec[0];
+      q_il.x() = vec[1];
+      q_il.y() = vec[2];
+      q_il.z() = vec[3];
+      t_il << vec[4], vec[5], vec[6];
+      p_imu->set_T_i_l(q_il, t_il);
+      std::cout<<"Extrinsic Parameter RESET ... "<< std::endl;
+  }
+  */
+  /// for debug
+  //p_imu->nh = nh;
+
+  std::thread th_proc(ProcessLoop, p_imu);
+
+  /*
+  // ros::spin();
+  rclcpp::Rate r(1000);
+
+  while (rclcpp::ok()) 
+  {
+      if (b_exit) break;
+      
+      r.sleep();
+  }
+  */
+  std::cout << "Wait for process loop exit" << std::endl;
+  if (th_proc.joinable()) th_proc.join();
+
+
   rclcpp::shutdown();
   return 0;
 }
