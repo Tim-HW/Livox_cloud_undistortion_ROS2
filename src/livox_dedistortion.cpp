@@ -35,22 +35,20 @@ float GetTimeStampROS2(auto msg)
 
 bool SyncMeasure(MeasureGroup &measgroup) 
 {    
-  
+  // IMU buffer empty and Lidar buffer empty  
   if (lidar_buffer.empty() || imu_buffer.empty()) 
   {
       /// Note: this will happen
       return false;
   }
-
-
-
+  // Current IMU time > Current Lidar time
   if (GetTimeStampROS2(imu_buffer.front()) > GetTimeStampROS2(lidar_buffer.front())) 
   {
       lidar_buffer.clear();
       std::cout << "clear lidar buffer, only happen at the beginning" << std::endl ;
       return false;
   }
-
+  // Last IMU time < Current Lidar time 
   if (GetTimeStampROS2(imu_buffer.back()) < GetTimeStampROS2(lidar_buffer.front())) 
   {
       return false;
@@ -59,27 +57,36 @@ bool SyncMeasure(MeasureGroup &measgroup)
 
   /// Add lidar data, and pop from buffer
   measgroup.lidar = lidar_buffer.front();
+  // Get timestamp from lidar
+  double lidar_time = GetTimeStampROS2(measgroup.lidar);
+  // remove last lidar in the buffer
   lidar_buffer.pop_front();
 
 
-  double lidar_time = GetTimeStampROS2(measgroup.lidar);
-
-  /// Add imu data, and pop from buffer
+  
+  // Clear last imu data
   measgroup.imu.clear();
+  // Add imu data, and pop from buffer
   int imu_cnt = 0;
+  // For all IMU data in the buffer
   for (const auto &imu : imu_buffer) 
   {   
+      // Get time
       double imu_time = GetTimeStampROS2(imu);
-      
+
       if (imu_time <= lidar_time) 
-      {
+      {   
+          // Stack IMU data into vector       
           measgroup.imu.push_back(imu);
+          // Increase the counter
           imu_cnt++;
       }
   }
+  // For every IMU data saved in the vector
   for (int i = 0; i < imu_cnt; ++i) 
-  {
-      imu_buffer.pop_front();
+  { 
+    // Empty buffer from the saved imu data
+    imu_buffer.pop_front();
   }
   
   std::cout << "add" << imu_cnt << "imu msg";
@@ -208,7 +215,7 @@ class MinimalSubscriber : public rclcpp::Node
 int main(int argc, char * argv[])
 {
 
-  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
+  //std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
 
   rclcpp::init(argc, argv);
@@ -232,7 +239,7 @@ int main(int argc, char * argv[])
   /// for debug
   //p_imu->nh = nh;
 
-  std::thread th_proc(ProcessLoop, p_imu);
+  //std::thread th_proc(ProcessLoop, p_imu);
 
   /*
   // ros::spin();
@@ -246,7 +253,7 @@ int main(int argc, char * argv[])
   }
   */
   std::cout << "Wait for process loop exit" << std::endl;
-  if (th_proc.joinable()) th_proc.join();
+  //if (th_proc.joinable()) th_proc.join();
 
 
   rclcpp::shutdown();

@@ -42,12 +42,12 @@ void ImuProcess::Reset()
   last_lidar_ = nullptr;
   last_imu_ = nullptr;
 
-  gyr_int_.Reset(-1, nullptr);
+  //gyr_int_.Reset(-1, nullptr);
 
   cur_pcl_in_.reset(new PointCloudXYZI());
   cur_pcl_un_.reset(new PointCloudXYZI());
 }
-
+/*
 void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::Imu::ConstPtr> &v_imu) 
 {
   /// Reset gyr integrator
@@ -61,7 +61,7 @@ void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::Imu::ConstPtr> &v_i
   //         gyr_int_.GetRot().angleY() * 180.0 / M_PI,
   //         gyr_int_.GetRot().angleZ() * 180.0 / M_PI);
 }
-
+*/
 void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
                               double dt_be, const Sophus::SE3d &Tbe) 
 {
@@ -125,11 +125,12 @@ void ImuProcess::Process(const MeasureGroup &meas)
   }
 
   /// Integrate all input imu message
-  IntegrateGyr(meas.imu);
+  //IntegrateGyr(meas.imu);
 
   /// Compensate lidar points with IMU rotation         
   //// Initial pose from IMU (with only rotation)
-  SE3d T_l_c(gyr_int_.GetRot(), Eigen::Vector3d::Zero());
+
+  //SE3d T_l_c(gyr_int_.GetRot(), Eigen::Vector3d::Zero());
   dt_l_c_ =
       GetTimeStampROS2(pcl_in_msg) - GetTimeStampROS2(last_lidar_);
   //// Get input pcl
@@ -137,14 +138,14 @@ void ImuProcess::Process(const MeasureGroup &meas)
 
   /// Undistort points
 
-  Sophus::SE3d T_l_be = T_i_l.inverse() * T_l_c * T_i_l;
+  //Sophus::SE3d T_l_be = T_i_l.inverse() * T_l_c * T_i_l;
   pcl::copyPointCloud(*cur_pcl_in_, *cur_pcl_un_);
   clock_t t1,t2;
   t1 = clock();
-  UndistortPcl(cur_pcl_un_, dt_l_c_, T_l_be);
+  //UndistortPcl(cur_pcl_un_, dt_l_c_, T_l_be);
   t2 = clock();
   printf("time is: %f\n", 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
-
+  /*
   {
     static ros::Publisher pub_UndistortPcl =
         nh.advertise<sensor_msgs::PointCloud2>("/livox_first_point", 100);
@@ -176,7 +177,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
     pcl_out_msg.header.frame_id = "/livox_frame";
     pub_UndistortPcl.publish(pcl_out_msg);
   }
-
+*/
   /// Record last measurements
   last_lidar_ = pcl_in_msg;
   last_imu_ = meas.imu.back();

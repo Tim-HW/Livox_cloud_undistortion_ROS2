@@ -51,7 +51,7 @@ include_directories(
 
 
 # Add executable the generate | name must be the same as the launch file
-add_executable(undistorded_node src/livox_dedistortion.cpp src/gyr_int.cpp)
+add_executable(undistorded_node src/livox_dedistortion.cpp)
 # Link dependencies to the executable | name must be the same as the launch file
 ament_target_dependencies(undistorded_node rclcpp std_msgs sensor_msgs nav_msgs)
 
