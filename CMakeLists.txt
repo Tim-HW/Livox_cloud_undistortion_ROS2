@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.5)
-project(undistorded-livox-ros2)
+project(deskew-livox)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
 endif()
 
+SET(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS "-std=c++11")
 # Default to C++14
+
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
@@ -51,13 +54,13 @@ include_directories(
 
 
 # Add executable the generate | name must be the same as the launch file
-add_executable(undistorded_node src/livox_dedistortion.cpp)
+add_executable(deskew_node src/livox_dedistortion.cpp src/data_process.cpp src/gyr_int.cpp)
 # Link dependencies to the executable | name must be the same as the launch file
-ament_target_dependencies(undistorded_node rclcpp std_msgs sensor_msgs nav_msgs)
+ament_target_dependencies(deskew_node rclcpp std_msgs sensor_msgs nav_msgs)
 
 # install the executable
 install(TARGETS
-undistorded_node
+deskew_node
   DESTINATION lib/${PROJECT_NAME})
 # install the launch executable
 install(DIRECTORY

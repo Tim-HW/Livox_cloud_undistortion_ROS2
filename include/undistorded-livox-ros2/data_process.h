@@ -7,7 +7,7 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include <fstream>
-//#include "gyr_int.h"
+#include "gyr_int.h"
 #include "sophus/se3.hpp"
 #include <cmath>
 #include <time.h>
@@ -33,14 +33,14 @@ class ImuProcess {
   void Reset();
   
   float GetTimeStampROS2(auto msg);
-  //void IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr> &v_imu);
+  void IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr> &v_imu);
 
   void UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out, double dt_be,
                     const Sophus::SE3d &Tbe);
   void set_T_i_l(Eigen::Quaterniond& q, Eigen::Vector3d& t){
     T_i_l = Sophus::SE3d(q, t);
   }
-
+  
   //ros::NodeHandle nh;
 
  private:
@@ -61,7 +61,7 @@ class ImuProcess {
   sensor_msgs::msg::Imu::ConstPtr last_imu_;
 
   /// For gyroscope integration
-  //GyrInt gyr_int_;
+  GyrInt gyr_int_;
 };
 
 #endif  // LOAM_HORIZON_DATA_PROCESS_H

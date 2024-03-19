@@ -1,5 +1,5 @@
 #include "undistorded-livox-ros2/data_process.h"
-
+#include "undistorded-livox-ros2/gyr_int.h"
 #include <pcl/common/io.h>
 #include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
@@ -8,7 +8,6 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-
 #include <cmath>
 
 using Sophus::SE3d;
@@ -17,7 +16,7 @@ using Sophus::SO3d;
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudtmp(new pcl::PointCloud<pcl::PointXYZI>());
 
 
-float GetTimeStampROS2(auto msg)
+float ImuProcess::GetTimeStampROS2(auto msg)
 {
   float sec  = msg->header.stamp.sec;
   float nano = msg->header.stamp.nanosec;
@@ -42,13 +41,13 @@ void ImuProcess::Reset()
   last_lidar_ = nullptr;
   last_imu_ = nullptr;
 
-  //gyr_int_.Reset(-1, nullptr);
+  gyr_int_.Reset(-1, nullptr);
 
   cur_pcl_in_.reset(new PointCloudXYZI());
   cur_pcl_un_.reset(new PointCloudXYZI());
 }
-/*
-void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::Imu::ConstPtr> &v_imu) 
+
+void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr> &v_imu) 
 {
   /// Reset gyr integrator
   gyr_int_.Reset(GetTimeStampROS2(last_lidar_), last_imu_);
@@ -56,12 +55,12 @@ void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::Imu::ConstPtr> &v_i
   for (const auto &imu : v_imu) {
     gyr_int_.Integrate(imu);
   }
-  //ROS_INFO("integrate rotation angle [x, y, z]: [%.2f, %.2f, %.2f]",
-  //         gyr_int_.GetRot().angleX() * 180.0 / M_PI,
-  //         gyr_int_.GetRot().angleY() * 180.0 / M_PI,
-  //         gyr_int_.GetRot().angleZ() * 180.0 / M_PI);
+  std::cout << "integrate rotation angle [x, y, z]: ["
+            << gyr_int_.GetRot().angleX() * 180.0 / M_PI <<", "
+            <<gyr_int_.GetRot().angleY() * 180.0 / M_PI << ", "
+            <<gyr_int_.GetRot().angleZ() * 180.0 / M_PI <<"]" << std::endl;
 }
-*/
+
 void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
                               double dt_be, const Sophus::SE3d &Tbe) 
 {
@@ -107,7 +106,8 @@ void ImuProcess::Process(const MeasureGroup &meas)
 
   auto pcl_in_msg = meas.lidar;
 
-  if (b_first_frame_) {
+  if (b_first_frame_) 
+  {
     /// The very first lidar frame
 
     /// Reset
@@ -117,7 +117,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
     last_lidar_ = pcl_in_msg;
     last_imu_ = meas.imu.back();
 
-    //ROS_WARN("The very first lidar frame");
+    std::cout << "The very first lidar frame"<< std::endl;
 
     /// Do nothing more, return
     b_first_frame_ = false;
@@ -125,24 +125,23 @@ void ImuProcess::Process(const MeasureGroup &meas)
   }
 
   /// Integrate all input imu message
-  //IntegrateGyr(meas.imu);
+  IntegrateGyr(meas.imu);
 
   /// Compensate lidar points with IMU rotation         
   //// Initial pose from IMU (with only rotation)
 
-  //SE3d T_l_c(gyr_int_.GetRot(), Eigen::Vector3d::Zero());
-  dt_l_c_ =
-      GetTimeStampROS2(pcl_in_msg) - GetTimeStampROS2(last_lidar_);
+  SE3d T_l_c(gyr_int_.GetRot(), Eigen::Vector3d::Zero());
+  dt_l_c_ = GetTimeStampROS2(pcl_in_msg) - GetTimeStampROS2(last_lidar_);
   //// Get input pcl
   pcl::fromROSMsg(*pcl_in_msg, *cur_pcl_in_);
 
   /// Undistort points
 
-  //Sophus::SE3d T_l_be = T_i_l.inverse() * T_l_c * T_i_l;
+  Sophus::SE3d T_l_be = T_i_l.inverse() * T_l_c * T_i_l;
   pcl::copyPointCloud(*cur_pcl_in_, *cur_pcl_un_);
   clock_t t1,t2;
   t1 = clock();
-  //UndistortPcl(cur_pcl_un_, dt_l_c_, T_l_be);
+  UndistortPcl(cur_pcl_un_, dt_l_c_, T_l_be);
   t2 = clock();
   printf("time is: %f\n", 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
   /*

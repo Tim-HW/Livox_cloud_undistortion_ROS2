@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/build",
+  "command": "/usr/bin/clang++ -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -Dqh_QHpointer -DvtkRenderingContext2D_AUTOINIT=\"1(vtkRenderingContextOpenGL2)\" -DvtkRenderingCore_AUTOINIT=\"3(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingOpenGL2)\" -I/usr/include/vtk-7.1 -I/usr/include/freetype2 -I/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/include -I/usr/local/include/eigen3 -I/usr/include/pcl-1.10 -I/usr/include/eigen3 -I/usr/include/ni -I/usr/include/openni2 -isystem /opt/ros/foxy/include -std=c++11  -O3 -DNDEBUG -std=gnu++14 -Wall -Wextra -Wpedantic -o CMakeFiles/deskew_node.dir/src/livox_dedistortion.cpp.o -c /home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/src/livox_dedistortion.cpp",
+  "file": "/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/src/livox_dedistortion.cpp",
+  "output": "CMakeFiles/deskew_node.dir/src/livox_dedistortion.cpp.o"
+},
+{
+  "directory": "/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/build",
+  "command": "/usr/bin/clang++ -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -Dqh_QHpointer -DvtkRenderingContext2D_AUTOINIT=\"1(vtkRenderingContextOpenGL2)\" -DvtkRenderingCore_AUTOINIT=\"3(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingOpenGL2)\" -I/usr/include/vtk-7.1 -I/usr/include/freetype2 -I/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/include -I/usr/local/include/eigen3 -I/usr/include/pcl-1.10 -I/usr/include/eigen3 -I/usr/include/ni -I/usr/include/openni2 -isystem /opt/ros/foxy/include -std=c++11  -O3 -DNDEBUG -std=gnu++14 -Wall -Wextra -Wpedantic -o CMakeFiles/deskew_node.dir/src/data_process.cpp.o -c /home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/src/data_process.cpp",
+  "file": "/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/src/data_process.cpp",
+  "output": "CMakeFiles/deskew_node.dir/src/data_process.cpp.o"
+},
+{
+  "directory": "/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/build",
+  "command": "/usr/bin/clang++ -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -Dqh_QHpointer -DvtkRenderingContext2D_AUTOINIT=\"1(vtkRenderingContextOpenGL2)\" -DvtkRenderingCore_AUTOINIT=\"3(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingOpenGL2)\" -I/usr/include/vtk-7.1 -I/usr/include/freetype2 -I/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/include -I/usr/local/include/eigen3 -I/usr/include/pcl-1.10 -I/usr/include/eigen3 -I/usr/include/ni -I/usr/include/openni2 -isystem /opt/ros/foxy/include -std=c++11  -O3 -DNDEBUG -std=gnu++14 -Wall -Wextra -Wpedantic -o CMakeFiles/deskew_node.dir/src/gyr_int.cpp.o -c /home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/src/gyr_int.cpp",
+  "file": "/home/tim/DREAM/pre-processing-lidar/ros2_ws/src/deskew-livox/src/gyr_int.cpp",
+  "output": "CMakeFiles/deskew_node.dir/src/gyr_int.cpp.o"
+}
+]

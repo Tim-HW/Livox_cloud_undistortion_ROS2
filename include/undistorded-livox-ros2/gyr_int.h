@@ -8,6 +8,7 @@ class GyrInt
 {
   public:
   GyrInt();
+  float GetTimeStampROS2(auto msg);
   void Integrate(const sensor_msgs::msg::Imu::ConstPtr &imu);
   void Reset(double start_timestamp, const sensor_msgs::msg::Imu::ConstPtr &lastimu);
 

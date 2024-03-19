@@ -5,7 +5,7 @@
 using Sophus::SO3d;
 
 
-float GetTimeStampROS2(auto msg)
+float GyrInt::GetTimeStampROS2(auto msg)
 {
   float sec  = msg->header.stamp.sec;
   float nano = msg->header.stamp.nanosec;
@@ -35,8 +35,8 @@ const Sophus::SO3d GyrInt::GetRot() const {
 void GyrInt::Integrate(const sensor_msgs::msg::Imu::ConstPtr &imu) {
   /// Init
   if (v_rot_.empty()) {
-    //std::cout << start_timestamp_ > 0 << std::endl;
-    //std::cout << last_imu_ != nullptr << std::endl;
+  //  printf(start_timestamp_ > 0);
+  //  printf(last_imu_ != nullptr);
 
     /// Identity rotation
     v_rot_.push_back(SO3d());

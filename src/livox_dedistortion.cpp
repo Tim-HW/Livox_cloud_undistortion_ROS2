@@ -32,6 +32,13 @@ float GetTimeStampROS2(auto msg)
   return sec + nano/1000000000;
 }
 
+void SigHandle(int sig) 
+{
+    b_exit = true;
+    std::cout << "catch sig :" << sig << std::endl;
+    sig_buffer.notify_all();
+}
+
 
 bool SyncMeasure(MeasureGroup &measgroup) 
 {    
@@ -94,19 +101,22 @@ bool SyncMeasure(MeasureGroup &measgroup)
   return true;
 }
 
-
-
+/*
 void ProcessLoop(std::shared_ptr<ImuProcess> p_imu) 
 {
   std::cout << "Start ProcessLoop"<< std::endl;
-  // 1000 Hz
+  // Init loop rate at 1000 Hz
   rclcpp::Rate r(1000);
-  
+  // If ros not shutdown
   while (rclcpp::ok()) 
-  {
+  {   
+      // Init measurement buffer
       MeasureGroup meas;
+      // Init tread (not sure what kind thos)
       std::unique_lock<std::mutex> lk(mtx_buffer);
-      sig_buffer.wait(lk, [&meas]() -> bool { return SyncMeasure(meas) || b_exit; });
+      // ???
+      //sig_buffer.wait(lk, [&meas]() -> bool { return SyncMeasure(meas) || b_exit; });
+      // Unlock thread
       lk.unlock();
 
       if (b_exit) 
@@ -127,7 +137,7 @@ void ProcessLoop(std::shared_ptr<ImuProcess> p_imu)
       //r.sleep();
   }
 }
-
+*/
 /* This example creates a subclass of Node and uses std::bind() to register a
 * member function as a callback from the timer. */
 
@@ -215,11 +225,14 @@ class MinimalSubscriber : public rclcpp::Node
 int main(int argc, char * argv[])
 {
 
-  //std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
+  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
-
+  // Init ROS2 node
   rclcpp::init(argc, argv);
+  // Init the class
   rclcpp::spin(std::make_shared<MinimalSubscriber>());
+  
+  signal(SIGINT, SigHandle);
 
   /*
   std::vector<double> vec;
