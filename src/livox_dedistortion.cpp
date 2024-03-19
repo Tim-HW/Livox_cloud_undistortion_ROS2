@@ -170,8 +170,6 @@ class MinimalSubscriber : public rclcpp::Node
 
       //sensor_msgs::msg::Imu::Ptr msg(new sensor_msgs::msg::Imu(*msg));
 
-      // ROS_DEBUG("get imu at time: %.6f", timestamp);
-   
       mtx_buffer.lock();
 
       if (timestamp < last_timestamp_imu) {
@@ -225,7 +223,7 @@ class MinimalSubscriber : public rclcpp::Node
 int main(int argc, char * argv[])
 {
 
-  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
+  //std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
   // Init ROS2 node
   rclcpp::init(argc, argv);

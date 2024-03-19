@@ -58,6 +58,9 @@ add_executable(deskew_node src/livox_dedistortion.cpp src/data_process.cpp src/g
 # Link dependencies to the executable | name must be the same as the launch file
 ament_target_dependencies(deskew_node rclcpp std_msgs sensor_msgs nav_msgs)
 
+
+target_link_libraries(deskew_node ${PCL_LIBRARIES})
+
 # install the executable
 install(TARGETS
 deskew_node
