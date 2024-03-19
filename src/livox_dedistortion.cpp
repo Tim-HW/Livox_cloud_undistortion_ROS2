@@ -101,7 +101,7 @@ bool SyncMeasure(MeasureGroup &measgroup)
   return true;
 }
 
-/*
+
 void ProcessLoop(std::shared_ptr<ImuProcess> p_imu) 
 {
   std::cout << "Start ProcessLoop"<< std::endl;
@@ -137,7 +137,7 @@ void ProcessLoop(std::shared_ptr<ImuProcess> p_imu)
       //r.sleep();
   }
 }
-*/
+
 /* This example creates a subclass of Node and uses std::bind() to register a
 * member function as a callback from the timer. */
 
@@ -162,10 +162,9 @@ class MinimalSubscriber : public rclcpp::Node
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) const
     { 
-
       // Get timestamp
       float timestamp = GetTimeStampROS2(msg); 
-
+      
       std::cout  << "get IMU at time:" << timestamp << std::endl;
 
       //sensor_msgs::msg::Imu::Ptr msg(new sensor_msgs::msg::Imu(*msg));
