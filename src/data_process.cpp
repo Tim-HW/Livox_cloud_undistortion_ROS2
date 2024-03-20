@@ -13,6 +13,8 @@
 using Sophus::SE3d;
 using Sophus::SO3d;
 
+rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_UndistortPcl;
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudtmp(new pcl::PointCloud<pcl::PointXYZI>());
 
 
@@ -38,8 +40,8 @@ void ImuProcess::Reset()
   std::cout <<"Reset ImuProcess"<< std::endl;
 
   b_first_frame_ = true;
-  last_lidar_ = nullptr;
-  last_imu_ = nullptr;
+  last_lidar_    = nullptr;
+  last_imu_      = nullptr;
 
   gyr_int_.Reset(-1, nullptr);
 
@@ -56,9 +58,9 @@ void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr>
     gyr_int_.Integrate(imu);
   }
   std::cout << "integrate rotation angle [x, y, z]: ["
-            << gyr_int_.GetRot().angleX() * 180.0 / M_PI <<", "
-            <<gyr_int_.GetRot().angleY() * 180.0 / M_PI << ", "
-            <<gyr_int_.GetRot().angleZ() * 180.0 / M_PI <<"]" << std::endl;
+            << gyr_int_.GetRot().angleX() * 180.0 / M_PI << ", "
+            << gyr_int_.GetRot().angleY() * 180.0 / M_PI << ", "
+            << gyr_int_.GetRot().angleZ() * 180.0 / M_PI << "]" << std::endl;
 }
 
 void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
@@ -144,8 +146,10 @@ void ImuProcess::Process(const MeasureGroup &meas)
   UndistortPcl(cur_pcl_un_, dt_l_c_, T_l_be);
   t2 = clock();
   printf("time is: %f\n", 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
-  /*
-  {
+
+  
+  { 
+    /*
     static ros::Publisher pub_UndistortPcl =
         nh.advertise<sensor_msgs::PointCloud2>("/livox_first_point", 100);
     sensor_msgs::PointCloud2 pcl_out_msg;
@@ -154,8 +158,9 @@ void ImuProcess::Process(const MeasureGroup &meas)
     pcl_out_msg.header.frame_id = "/livox_frame";
     pub_UndistortPcl.publish(pcl_out_msg);
     laserCloudtmp->clear();
+    */
   }
-
+  /*
   {
     static ros::Publisher pub_UndistortPcl =
         nh.advertise<sensor_msgs::PointCloud2>("/livox_undistort", 100);
@@ -176,10 +181,11 @@ void ImuProcess::Process(const MeasureGroup &meas)
     pcl_out_msg.header.frame_id = "/livox_frame";
     pub_UndistortPcl.publish(pcl_out_msg);
   }
-*/
+  */
   /// Record last measurements
   last_lidar_ = pcl_in_msg;
-  last_imu_ = meas.imu.back();
+  last_imu_   = meas.imu.back();
   cur_pcl_in_.reset(new PointCloudXYZI());
   cur_pcl_un_.reset(new PointCloudXYZI());
+  
 }
