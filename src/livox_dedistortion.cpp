@@ -39,6 +39,7 @@ void SigHandle(int sig)
 }
 
 
+
 bool SyncMeasure(MeasureGroup &measgroup) 
 {    
   // IMU buffer empty and Lidar buffer empty  
@@ -100,7 +101,6 @@ bool SyncMeasure(MeasureGroup &measgroup)
   return true;
 }
 
-
 void ProcessLoop(std::shared_ptr<ImuProcess> p_imu) 
 {
   //RCLCPP_INFO("Start ProcessLoop");
@@ -146,7 +146,7 @@ class MinimalSubscriber : public rclcpp::Node
 {
   public:
     MinimalSubscriber()
-    : Node("desdistortion_node")
+    : Node("deskew_node")
     {
 
       auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
@@ -157,6 +157,8 @@ class MinimalSubscriber : public rclcpp::Node
       
 
     }
+
+
 
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) const
@@ -221,18 +223,21 @@ class MinimalSubscriber : public rclcpp::Node
 int main(int argc, char * argv[])
 {
 
-  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
+  
 
   // Init ROS2 node
   rclcpp::init(argc, argv);
+
+  signal(SIGINT, SigHandle);
   // Init the class
   rclcpp::spin(std::make_shared<MinimalSubscriber>());
   
-  signal(SIGINT, SigHandle);
-  
+
+  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
   std::vector<double> vec;
-  //if(nh.getParam("/ExtIL", vec) )
+  /*
+  if(nh.getParam("/ExtIL", vec) )
   {
       Eigen::Quaternion<double> q_il;
       Eigen::Vector3d t_il;
@@ -245,7 +250,7 @@ int main(int argc, char * argv[])
       
       //RCLCPP_INFO(rclcpp::get_logger(),"Extrinsic Parameter RESET ... ");
   }
-
+  */
   /// for debug
   //p_imu->nh = nh;
 
@@ -260,10 +265,10 @@ int main(int argc, char * argv[])
       r.sleep();
   }
   
-  RCLCPP_INFO(rclcpp->get_logger(),"Wait for process loop exit");
-  //if (th_proc.joinable()) th_proc.join();
-
+  std::cout << "Wait for process loop exit" << std::endl;
+  if(th_proc.joinable()) th_proc.join();
 
   rclcpp::shutdown();
+
   return 0;
 }

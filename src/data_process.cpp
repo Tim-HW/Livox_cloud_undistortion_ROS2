@@ -13,7 +13,8 @@
 using Sophus::SE3d;
 using Sophus::SO3d;
 
-rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_UndistortPcl;
+std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("hello_world");
+rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_UndistortPcl;
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudtmp(new pcl::PointCloud<pcl::PointXYZI>());
 
@@ -37,7 +38,7 @@ ImuProcess::~ImuProcess() {}
 
 void ImuProcess::Reset() 
 {
-  std::cout <<"Reset ImuProcess"<< std::endl;
+  RCLCPP_INFO(node->get_logger(),"Reset ImuProcess");
 
   b_first_frame_ = true;
   last_lidar_    = nullptr;
@@ -57,10 +58,10 @@ void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr>
   for (const auto &imu : v_imu) {
     gyr_int_.Integrate(imu);
   }
-  std::cout << "integrate rotation angle [x, y, z]: ["
-            << gyr_int_.GetRot().angleX() * 180.0 / M_PI << ", "
-            << gyr_int_.GetRot().angleY() * 180.0 / M_PI << ", "
-            << gyr_int_.GetRot().angleZ() * 180.0 / M_PI << "]" << std::endl;
+  RCLCPP_INFO(node->get_logger(),"integrate rotation angle [x, y, z]: [%.2f, %.2f, %.2f]",
+           gyr_int_.GetRot().angleX() * 180.0 / M_PI,
+           gyr_int_.GetRot().angleY() * 180.0 / M_PI,
+           gyr_int_.GetRot().angleZ() * 180.0 / M_PI);
 }
 
 void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
@@ -99,12 +100,12 @@ void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
 
 void ImuProcess::Process(const MeasureGroup &meas) 
 {
-  //ROS_ASSERT(!meas.imu.empty());
-  //ROS_ASSERT(meas.lidar != nullptr);
-  //ROS_DEBUG("Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
-  //          meas.lidar->header.stamp.toSec(), meas.imu.size(),
-  //          meas.imu.front()->header.stamp.toSec(),
-  //          meas.imu.back()->header.stamp.toSec());
+  //RCLCPP_ASSERT(!meas.imu.empty());
+  //RCLCPP_ASSERT(meas.lidar != nullptr);
+  RCLCPP_DEBUG(node->get_logger(),"Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
+            GetTimeStampROS2(meas.lidar), meas.imu.size(),
+            GetTimeStampROS2(meas.imu.front()),
+            GetTimeStampROS2(meas.imu.back()));
 
   auto pcl_in_msg = meas.lidar;
 
@@ -119,7 +120,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
     last_lidar_ = pcl_in_msg;
     last_imu_ = meas.imu.back();
 
-    std::cout << "The very first lidar frame"<< std::endl;
+    RCLCPP_WARN(node->get_logger(),"The very first lidar frame");
 
     /// Do nothing more, return
     b_first_frame_ = false;
@@ -149,39 +150,35 @@ void ImuProcess::Process(const MeasureGroup &meas)
 
   
   { 
-    /*
-    static ros::Publisher pub_UndistortPcl =
-        nh.advertise<sensor_msgs::PointCloud2>("/livox_first_point", 100);
-    sensor_msgs::PointCloud2 pcl_out_msg;
+    node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
+    sensor_msgs::msg::PointCloud2 pcl_out_msg;
     pcl::toROSMsg(*laserCloudtmp, pcl_out_msg);
     pcl_out_msg.header = pcl_in_msg->header;
     pcl_out_msg.header.frame_id = "/livox_frame";
-    pub_UndistortPcl.publish(pcl_out_msg);
+    pub_UndistortPcl->publish(pcl_out_msg);
     laserCloudtmp->clear();
-    */
+
   }
-  /*
+  
   {
-    static ros::Publisher pub_UndistortPcl =
-        nh.advertise<sensor_msgs::PointCloud2>("/livox_undistort", 100);
-    sensor_msgs::PointCloud2 pcl_out_msg;
+    node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
+    sensor_msgs::msg::PointCloud2 pcl_out_msg;
     pcl::toROSMsg(*cur_pcl_un_, pcl_out_msg);
     pcl_out_msg.header = pcl_in_msg->header;
     pcl_out_msg.header.frame_id = "/livox_frame";
-    pub_UndistortPcl.publish(pcl_out_msg);
+    pub_UndistortPcl->publish(pcl_out_msg);
   }
 
   {
-    static ros::Publisher pub_UndistortPcl =
-        nh.advertise<sensor_msgs::PointCloud2>("/livox_origin", 100);
-    sensor_msgs::PointCloud2 pcl_out_msg;
+    node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
+    sensor_msgs::msg::PointCloud2 pcl_out_msg;
     std::cout << "point size: " << cur_pcl_in_->points.size() << "\n";
     pcl::toROSMsg(*cur_pcl_in_, pcl_out_msg);
     pcl_out_msg.header = pcl_in_msg->header;
     pcl_out_msg.header.frame_id = "/livox_frame";
-    pub_UndistortPcl.publish(pcl_out_msg);
+    pub_UndistortPcl->publish(pcl_out_msg);
   }
-  */
+
   /// Record last measurements
   last_lidar_ = pcl_in_msg;
   last_imu_   = meas.imu.back();
