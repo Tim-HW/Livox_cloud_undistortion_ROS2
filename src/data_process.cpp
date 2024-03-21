@@ -117,7 +117,6 @@ void ImuProcess::Process(const MeasureGroup &meas)
     last_imu_ = meas.imu.back();
 
     RCLCPP_WARN(node->get_logger(),"The very first lidar frame");
-
     /// Do nothing more, return
     b_first_frame_ = false;
     return;
