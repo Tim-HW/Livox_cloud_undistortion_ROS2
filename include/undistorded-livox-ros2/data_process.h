@@ -33,6 +33,7 @@ class ImuProcess {
   void Reset();
   
   float GetTimeStampROS2(auto msg);
+  
   void IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr> &v_imu);
 
   void UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out, double dt_be,

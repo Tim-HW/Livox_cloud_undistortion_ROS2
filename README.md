@@ -26,7 +26,7 @@ colcon build
 ## Run
 ```
 source install/setup.bash
-ros2 launch deskew-livox run.launch
+ros2 run deskew-livox deskew_node
 ```
 
 ## Interface introduction

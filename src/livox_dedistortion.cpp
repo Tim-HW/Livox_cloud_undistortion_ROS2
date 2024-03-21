@@ -9,6 +9,8 @@
 #include <thread>
 #include <memory>
 #include <iostream>
+#include <chrono>
+#include <functional>
 
 /// To notify new data
 std::mutex mtx_buffer;
@@ -36,6 +38,11 @@ void SigHandle(int sig)
     b_exit = true;
     std::cout << "catch sig :" << sig << std::endl;
     sig_buffer.notify_all();
+
+    std::cout << "Wait for process loop exit" << std::endl;
+    
+  
+  rclcpp::shutdown();
 }
 
 
@@ -47,13 +54,14 @@ bool SyncMeasure(MeasureGroup &measgroup)
   if (lidar_buffer.empty() || imu_buffer.empty()) 
   {
       /// Note: this will happen
+      std::cout << "buffers empty " << std::endl;
       return false;
   }
   // Current IMU time > Current Lidar time
   if (GetTimeStampROS2(imu_buffer.front()) > GetTimeStampROS2(lidar_buffer.front())) 
   {
       lidar_buffer.clear();
-      //RCLCPP_ERROR("clear lidar buffer, only happen at the beginning");
+      std::cout <<"clear lidar buffer, only happen at the beginning"<< std::endl;
       return false;
   }
   // Last IMU time < Current Lidar time 
@@ -62,6 +70,7 @@ bool SyncMeasure(MeasureGroup &measgroup)
       return false;
   }
 
+  std::cout<< "add data to buffers" << std::endl;
 
   /// Add lidar data, and pop from buffer
   measgroup.lidar = lidar_buffer.front();
@@ -104,44 +113,40 @@ bool SyncMeasure(MeasureGroup &measgroup)
 
 void ProcessLoop(std::shared_ptr<ImuProcess> p_imu) 
 {
-  //RCLCPP_INFO("Start ProcessLoop");
-  // Init loop rate at 1000 Hz
+  std::cout << "Start ProcessLoop" << std::endl;
+
   rclcpp::Rate r(1000);
-  // If ros not shutdown
   while (rclcpp::ok()) 
-  {   
-      // Init measurement buffer
+  {
       MeasureGroup meas;
-      // Init tread (not sure what kind thos)
       std::unique_lock<std::mutex> lk(mtx_buffer);
-      // Wait for the measurment to be sync
       sig_buffer.wait(lk, [&meas]() -> bool { return SyncMeasure(meas) || b_exit; });
-      // Unlock thread
       lk.unlock();
 
       if (b_exit) 
       {
-          std::cout<<"b_exit=true, exit"<<std::endl;
+          std::cout << "b_exit=true, exit" << std::endl;
           break;
       }
 
       if (b_reset) 
       {
-          std::cout << "reset when rosbag play back" <<std::endl;
+          std::cout << "reset when rosbag play back" << std::endl;
           p_imu->Reset();
           b_reset = false;
           continue;
       }
       p_imu->Process(meas);
-      
       r.sleep();
   }
+
 }
 
 /* This example creates a subclass of Node and uses std::bind() to register a
 * member function as a callback from the timer. */
 
 using std::placeholders::_1;
+using namespace std::chrono_literals;
 
 class MinimalSubscriber : public rclcpp::Node
 {
@@ -156,10 +161,23 @@ class MinimalSubscriber : public rclcpp::Node
       // Subscribe to Pointcloud
       sub_pointcloud = this->create_subscription<sensor_msgs::msg::PointCloud2>(pointcloud_topic, default_qos, std::bind(&MinimalSubscriber::pointcloud_callback, this, _1));
       
+      // loop function called
+      //timer_ = this->create_wall_timer(100ms, std::bind(&MinimalSubscriber::timer_callback, this));
+      
 
+      
+    
     }
 
+    void timer_callback()
+    { 
+      RCLCPP_INFO(this->get_logger(), "MAIN LOOP PROCESS");
+      std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
+      std::thread th_proc(ProcessLoop, p_imu);
+
+     if (th_proc.joinable()) th_proc.join();
+    }
 
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) const
@@ -204,7 +222,7 @@ class MinimalSubscriber : public rclcpp::Node
       }
       last_timestamp_lidar = timestamp;
       lidar_buffer.push_back(msg);
-      std::cout << "received point size: " << float(msg->data.size())/float(msg->point_step) << "\n";
+      //std::cout << "received point size: " << float(msg->data.size())/float(msg->point_step) << "\n";
       // Unlock the tread
       mtx_buffer.unlock();
 
@@ -213,7 +231,8 @@ class MinimalSubscriber : public rclcpp::Node
     
     }
 
-  
+    rclcpp::TimerBase::SharedPtr timer_;
+
     std::string pointcloud_topic = "/livox/lidar";
     std::string imu_topic        = "/livox/imu";
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr  sub_pointcloud;
@@ -224,50 +243,17 @@ class MinimalSubscriber : public rclcpp::Node
 
 int main(int argc, char * argv[])
 {
+  signal(SIGINT, SigHandle);
 
+  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
   // Init ROS2 node
   rclcpp::init(argc, argv);
 
-  //signal(SIGINT, SigHandle);
+  std::thread th_proc(ProcessLoop, p_imu);
   // Init the class
   rclcpp::spin(std::make_shared<MinimalSubscriber>());  
-
-  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
-
-  std::vector<double> vec;
-  /*
-  if(nh.getParam("/ExtIL", vec) )
-  {
-      Eigen::Quaternion<double> q_il;
-      Eigen::Vector3d t_il;
-      q_il.w() = vec[0];
-      q_il.x() = vec[1];
-      q_il.y() = vec[2];
-      q_il.z() = vec[3];
-      t_il << vec[4], vec[5], vec[6];
-      p_imu->set_T_i_l(q_il, t_il);
-      
-      //RCLCPP_INFO(rclcpp::get_logger(),"Extrinsic Parameter RESET ... ");
-  }
-  */
-  /// for debug
-  //p_imu->nh = nh;
-
-  // Actual work is in this line
-  std::thread th_proc(ProcessLoop, p_imu);
-
-  rclcpp::Rate r(1000);
-  
-  while (rclcpp::ok()) 
-  {
-      if (b_exit) break;
-      r.sleep();
-  }
-  
-  std::cout << "Wait for process loop exit" << std::endl;
-  //if(th_proc.joinable()) th_proc.join();
-  
+  // Shutdown 
   rclcpp::shutdown();
-
+  // End
   return 0;
 }
