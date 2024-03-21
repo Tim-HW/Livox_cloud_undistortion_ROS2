@@ -1,5 +1,4 @@
 #include "undistorded-livox-ros2/data_process.h"
-#include "undistorded-livox-ros2/gyr_int.h"
 #include <pcl/common/io.h>
 #include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
@@ -12,9 +11,6 @@
 
 using Sophus::SE3d;
 using Sophus::SO3d;
-
-std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("hello_world");
-rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_UndistortPcl;
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudtmp(new pcl::PointCloud<pcl::PointXYZI>());
 
@@ -102,7 +98,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
 {
   //RCLCPP_ASSERT(!meas.imu.empty());
   //RCLCPP_ASSERT(meas.lidar != nullptr);
-  RCLCPP_DEBUG(node->get_logger(),"Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
+  RCLCPP_INFO(node->get_logger(),"Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
             GetTimeStampROS2(meas.lidar), meas.imu.size(),
             GetTimeStampROS2(meas.imu.front()),
             GetTimeStampROS2(meas.imu.back()));
@@ -148,8 +144,8 @@ void ImuProcess::Process(const MeasureGroup &meas)
   t2 = clock();
   printf("time is: %f\n", 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
 
-  
   { 
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_UndistortPcl;
     node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
     sensor_msgs::msg::PointCloud2 pcl_out_msg;
     pcl::toROSMsg(*laserCloudtmp, pcl_out_msg);
@@ -160,7 +156,8 @@ void ImuProcess::Process(const MeasureGroup &meas)
 
   }
   
-  {
+  { 
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_UndistortPcl;
     node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
     sensor_msgs::msg::PointCloud2 pcl_out_msg;
     pcl::toROSMsg(*cur_pcl_un_, pcl_out_msg);
@@ -170,6 +167,7 @@ void ImuProcess::Process(const MeasureGroup &meas)
   }
 
   {
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_UndistortPcl;
     node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
     sensor_msgs::msg::PointCloud2 pcl_out_msg;
     std::cout << "point size: " << cur_pcl_in_->points.size() << "\n";

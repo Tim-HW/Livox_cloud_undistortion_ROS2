@@ -40,6 +40,7 @@ void SigHandle(int sig)
 
 
 
+
 bool SyncMeasure(MeasureGroup &measgroup) 
 {    
   // IMU buffer empty and Lidar buffer empty  
@@ -96,7 +97,7 @@ bool SyncMeasure(MeasureGroup &measgroup)
     imu_buffer.pop_front();
   }
   
-  // RCLCPP_DEBUG("add %d imu msg", imu_cnt);
+  std::cout <<"add "<< imu_cnt <<"imu msg";
 
   return true;
 }
@@ -113,20 +114,20 @@ void ProcessLoop(std::shared_ptr<ImuProcess> p_imu)
       MeasureGroup meas;
       // Init tread (not sure what kind thos)
       std::unique_lock<std::mutex> lk(mtx_buffer);
-      // ???
+      // Wait for the measurment to be sync
       sig_buffer.wait(lk, [&meas]() -> bool { return SyncMeasure(meas) || b_exit; });
       // Unlock thread
       lk.unlock();
 
       if (b_exit) 
       {
-          //RCLCPP_INFO("b_exit=true, exit");
+          std::cout<<"b_exit=true, exit"<<std::endl;
           break;
       }
 
       if (b_reset) 
       {
-          //RCLCPP_WARN("reset when rosbag play back");
+          std::cout << "reset when rosbag play back" <<std::endl;
           p_imu->Reset();
           b_reset = false;
           continue;
@@ -166,13 +167,14 @@ class MinimalSubscriber : public rclcpp::Node
       // Get timestamp
       float timestamp = GetTimeStampROS2(msg); 
       
-      RCLCPP_DEBUG(this->get_logger(),"get point cloud at time: %.6f", timestamp);
+      RCLCPP_INFO(this->get_logger(),"get IMU at time: %.6f", timestamp);
 
       //sensor_msgs::msg::Imu::Ptr msg(new sensor_msgs::msg::Imu(*msg));
 
       mtx_buffer.lock();
 
-      if (timestamp < last_timestamp_imu) {
+      if (timestamp < last_timestamp_imu) 
+      {
           RCLCPP_ERROR(this->get_logger(),"imu loop back, clear buffer");
           imu_buffer.clear();
           b_reset = true;
@@ -191,7 +193,7 @@ class MinimalSubscriber : public rclcpp::Node
     { 
       float timestamp = GetTimeStampROS2(msg);
       // Display it
-      RCLCPP_DEBUG(this->get_logger(),"get point cloud at time: %.6f", timestamp);
+      RCLCPP_INFO(this->get_logger(),"get point cloud at time: %.6f", timestamp);
 
       // Lock the thread
       mtx_buffer.lock();
@@ -223,15 +225,12 @@ class MinimalSubscriber : public rclcpp::Node
 int main(int argc, char * argv[])
 {
 
-  
-
   // Init ROS2 node
   rclcpp::init(argc, argv);
 
-  signal(SIGINT, SigHandle);
+  //signal(SIGINT, SigHandle);
   // Init the class
-  rclcpp::spin(std::make_shared<MinimalSubscriber>());
-  
+  rclcpp::spin(std::make_shared<MinimalSubscriber>());  
 
   std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
@@ -254,11 +253,11 @@ int main(int argc, char * argv[])
   /// for debug
   //p_imu->nh = nh;
 
+  // Actual work is in this line
   std::thread th_proc(ProcessLoop, p_imu);
 
-  // ros::spin();
   rclcpp::Rate r(1000);
-
+  
   while (rclcpp::ok()) 
   {
       if (b_exit) break;
@@ -266,8 +265,8 @@ int main(int argc, char * argv[])
   }
   
   std::cout << "Wait for process loop exit" << std::endl;
-  if(th_proc.joinable()) th_proc.join();
-
+  //if(th_proc.joinable()) th_proc.join();
+  
   rclcpp::shutdown();
 
   return 0;

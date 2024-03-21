@@ -3,11 +3,11 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include "gyr_int.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include <fstream>
-#include "gyr_int.h"
 #include "sophus/se3.hpp"
 #include <cmath>
 #include <time.h>
@@ -59,6 +59,8 @@ class ImuProcess {
   //// For timestamp usage
   sensor_msgs::msg::PointCloud2::ConstPtr last_lidar_;
   sensor_msgs::msg::Imu::ConstPtr last_imu_;
+
+  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("hello_world");
 
   /// For gyroscope integration
   GyrInt gyr_int_;
