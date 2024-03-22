@@ -61,7 +61,7 @@ class ImuProcess {
   sensor_msgs::msg::PointCloud2::ConstPtr last_lidar_;
   sensor_msgs::msg::Imu::ConstPtr last_imu_;
 
-  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("hello_world");
+  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("data_process");
 
   /// For gyroscope integration
   GyrInt gyr_int_;
