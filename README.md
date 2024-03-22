@@ -17,8 +17,8 @@ This project is used for lidar point cloud undistortion. During the recording pr
 ## Prepare the data
 Data type: rosbag  
 Topics: 
-* /livox/lidar   type: sensor_msgs::PointCloud2
-* /livox/imu     type: sensor_msgs::Imu
+* /livox/lidar   type: sensor_msgs::msg::PointCloud2
+* /livox/imu     type: sensor_msgs::msg::Imu
 
 ## Dependency
 *  ROS2
