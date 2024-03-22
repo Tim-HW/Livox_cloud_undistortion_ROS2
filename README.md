@@ -1,9 +1,9 @@
-# livox_cloud_undistortion
-This project is used for lidar point cloud undistortion. During the recording process, the lidar point cloud has naturally the distortion due to the affect of ego motion. Using the interpolation of ego motion, the distortion can be eliminated by transforming each point to the frame head or tail coordinate. Figures below show an example of undistortion. The left figure shows the row point cloud. The right figure shows the result of rotation distortion deskew.
+# livox_cloud_undistortion_ROS2
+This project is used for lidar point cloud undistortion. During the recording process, the lidar point cloud has naturally the distortion due to the affect of ego motion. Using the interpolation of ego motion, the distortion can be eliminated by transforming each point to the frame head or tail coordinate. Figures below show an example of undistortion. The left figure shows the row point cloud. The right figure shows the result of rotation distortion deskew. This repo is basically an addaptation of the following code made by Livox on ROS2.
 
 <div align="center">
-<img src="./launch/before.png" height="300px">
-<img src="./launch/after.png" height="300px">
+<img src="./images/before.png" height="300px">
+<img src="./images/after.png" height="300px">
 </div>
 
 ## Prepare the data
