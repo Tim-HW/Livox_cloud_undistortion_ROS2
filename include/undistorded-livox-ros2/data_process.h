@@ -60,7 +60,7 @@ class ImuProcess {
   //// For timestamp usage
   sensor_msgs::msg::PointCloud2::ConstPtr last_lidar_;
   sensor_msgs::msg::Imu::ConstPtr last_imu_;
-
+  // ROS2 node for info and publication
   std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("data_process");
 
   /// For gyroscope integration

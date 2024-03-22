@@ -18,7 +18,7 @@ std::string pointcloud_topic = "/livox/lidar";
 std::string imu_topic        = "/livox/imu";
 rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr  sub_pointcloud;
 rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr          sub_imu;
-
+rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr     pub_UndistortPcl;
 
 
 
@@ -162,11 +162,9 @@ void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
 { 
   // Get timestamp
   float timestamp = GetTimeStampROS2(msg); 
-  
+    
   std::cout<<"get IMU at time: "<< timestamp<< std::endl;
-
-  //sensor_msgs::msg::Imu::Ptr msg(new sensor_msgs::msg::Imu(*msg));
-
+  // Lock the variable
   mtx_buffer.lock();
 
   if (timestamp < last_timestamp_imu) 
@@ -176,10 +174,11 @@ void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
       b_reset = true;
   }
   last_timestamp_imu = timestamp;
-
+  // Add current IMU to the buffer
   imu_buffer.push_back(msg);
-
+  // Unlock variable
   mtx_buffer.unlock();
+  // Notify
   sig_buffer.notify_all();
   
   
@@ -215,53 +214,39 @@ int main(int argc, char * argv[])
 {
   // Create signal handler
   signal(SIGINT, SigHandle);
-
-  //std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
   // Init rclcpp
   rclcpp::init(argc, argv);
   // Create node
   node = rclcpp::Node::make_shared("deskew_node");
-
+  // 
   auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
   // Subscribe to IMU
   sub_imu = node->create_subscription<sensor_msgs::msg::Imu>(imu_topic, default_qos, imu_callback);
   // Subscribe to Pointcloud
   sub_pointcloud = node->create_subscription<sensor_msgs::msg::PointCloud2>(pointcloud_topic, default_qos, pointcloud_callback);
       
+  pub_UndistortPcl = node->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_first_point", 100);
 
-      std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
-    /*
-    std::vector<double> vec;
-    if( nh.getParam("/ExtIL", vec) )
-    {
-        Eigen::Quaternion<double> q_il;
-        Eigen::Vector3d t_il;
-        q_il.w() = vec[0];
-        q_il.x() = vec[1];
-        q_il.y() = vec[2];
-        q_il.z() = vec[3];
-        t_il << vec[4], vec[5], vec[6];
-        p_imu->set_T_i_l(q_il, t_il);
-        RCLCPP_INFO(node->get_logger(),"Extrinsic Parameter RESET ... ");
-    }
-  
-    /// for debug
-    p_imu->nh = nh;
-    */
-    std::thread th_proc(ProcessLoop, p_imu);
+  // Init Imu process object
+  std::shared_ptr<ImuProcess> p_imu(new ImuProcess());
+  // Create thread for sync and intergration
+  std::thread th_proc(ProcessLoop, p_imu);
 
-    // ros::spin();
-    rclcpp::Rate r(1000);
-    while (rclcpp::ok()) 
-    {
-        if (b_exit) break;
-        rclcpp::spin(node);
-        r.sleep();
-    }
-
-    RCLCPP_INFO(node->get_logger(),"Wait for process loop exit");
-    if (th_proc.joinable()) th_proc.join();
-
-  
+  // Init ROS2 spin rate
+  rclcpp::Rate r(1000);
+  // While ROS2 running 
+  while (rclcpp::ok()) 
+  {   
+      // Exit if ctrl+c
+      if (b_exit) break;
+      // spin the node
+      rclcpp::spin(node);
+      // Wait for 0.1ms
+      r.sleep();
+  }
+  // Exit the program
+  RCLCPP_INFO(node->get_logger(),"Wait for process loop exit");
+  if (th_proc.joinable()) th_proc.join();
+  // exit
   return 0;
 }
