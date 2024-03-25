@@ -12,8 +12,6 @@
 using Sophus::SE3d;
 using Sophus::SO3d;
 
-rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr     pub_UndistortPcl2;
-
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudtmp(new pcl::PointCloud<pcl::PointXYZI>());
 
@@ -37,7 +35,7 @@ ImuProcess::~ImuProcess() {}
 
 void ImuProcess::Reset() 
 {
-  RCLCPP_INFO(node->get_logger(),"Reset ImuProcess");
+  RCLCPP_INFO(node_->get_logger(),"Reset ImuProcess");
 
   b_first_frame_ = true;
   last_lidar_    = nullptr;
@@ -57,7 +55,7 @@ void ImuProcess::IntegrateGyr(const std::vector<sensor_msgs::msg::Imu::ConstPtr>
   for (const auto &imu : v_imu) {
     gyr_int_.Integrate(imu);
   }
-  RCLCPP_INFO(node->get_logger(),"integrate rotation angle [x, y, z]: [%.2f, %.2f, %.2f]",
+  RCLCPP_INFO(node_->get_logger(),"integrate rotation angle [x, y, z]: [%.2f, %.2f, %.2f]",
            gyr_int_.GetRot().angleX() * 180.0 / M_PI,
            gyr_int_.GetRot().angleY() * 180.0 / M_PI,
            gyr_int_.GetRot().angleZ() * 180.0 / M_PI);
@@ -97,17 +95,20 @@ void ImuProcess::UndistortPcl(const PointCloudXYZI::Ptr &pcl_in_out,
   }
 }
 
-void ImuProcess::Process(const MeasureGroup &meas) 
+std::vector<sensor_msgs::msg::PointCloud2> ImuProcess::Process(const MeasureGroup &meas) 
 {
   //RCLCPP_ASSERT(!meas.imu.empty());
   //RCLCPP_ASSERT(meas.lidar != nullptr);
-  RCLCPP_INFO(node->get_logger(),"Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
+
+  std::vector<sensor_msgs::msg::PointCloud2> PclToPublish;
+  
+  RCLCPP_INFO(node_->get_logger(),"Process lidar at time: %.4f, %lu imu msgs from %.4f to %.4f",
             GetTimeStampROS2(meas.lidar), meas.imu.size(),
             GetTimeStampROS2(meas.imu.front()),
             GetTimeStampROS2(meas.imu.back()));
 
   auto pcl_in_msg = meas.lidar;
-
+  
   if (b_first_frame_) 
   {
     /// The very first lidar frame
@@ -119,10 +120,11 @@ void ImuProcess::Process(const MeasureGroup &meas)
     last_lidar_ = pcl_in_msg;
     last_imu_ = meas.imu.back();
 
-    RCLCPP_WARN(node->get_logger(),"The very first lidar frame");
+    RCLCPP_WARN(node_->get_logger(),"The very first lidar frame");
     /// Do nothing more, return
     b_first_frame_ = false;
-    return;
+    // Return an empty vector of pointcloud
+    return PclToPublish;
   }
 
   /// Integrate all input imu message
@@ -143,35 +145,35 @@ void ImuProcess::Process(const MeasureGroup &meas)
   t1 = clock();
   UndistortPcl(cur_pcl_un_, dt_l_c_, T_l_be);
   t2 = clock();
-  printf("time is: %f\n", 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
+  //printf("time is: %f\n", 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
 
-  
-  
-  { 
+
+  {
+    // First Pointcloud
     sensor_msgs::msg::PointCloud2 pcl_out_msg; 
     pcl::toROSMsg(*laserCloudtmp, pcl_out_msg);
     pcl_out_msg.header = pcl_in_msg->header;
     pcl_out_msg.header.frame_id = "/livox_frame";
-    //pub_UndistortPcl2->publish(pcl_out_msg);
+    PclToPublish.push_back(pcl_out_msg);
     laserCloudtmp->clear();
   }
-  
-  
+
   { 
+    // Undistorded
     sensor_msgs::msg::PointCloud2 pcl_out_msg;
     pcl::toROSMsg(*cur_pcl_un_, pcl_out_msg);
     pcl_out_msg.header = pcl_in_msg->header;
     pcl_out_msg.header.frame_id = "/livox_frame";
-    //pub_UndistortPcl2->publish(pcl_out_msg);
+    PclToPublish.push_back(pcl_out_msg);
   }
-
   { 
+    // Origin
     sensor_msgs::msg::PointCloud2 pcl_out_msg;
-    std::cout << "point size: " << cur_pcl_in_->points.size() << "\n";
+    //std::cout << "point size: " << cur_pcl_in_->points.size() << "\n";
     pcl::toROSMsg(*cur_pcl_in_, pcl_out_msg);
     pcl_out_msg.header = pcl_in_msg->header;
     pcl_out_msg.header.frame_id = "/livox_frame";
-    //pub_UndistortPcl2->publish(pcl_out_msg);
+    PclToPublish.push_back(pcl_out_msg);
   }
 
   /// Record last measurements
@@ -179,5 +181,6 @@ void ImuProcess::Process(const MeasureGroup &meas)
   last_imu_   = meas.imu.back();
   cur_pcl_in_.reset(new PointCloudXYZI());
   cur_pcl_un_.reset(new PointCloudXYZI());
-  
+
+  return PclToPublish; 
 }

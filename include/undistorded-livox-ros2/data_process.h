@@ -28,8 +28,8 @@ class ImuProcess {
 
   ImuProcess();
   ~ImuProcess();
-
-  void Process(const MeasureGroup &meas);
+  
+  std::vector<sensor_msgs::msg::PointCloud2> Process(const MeasureGroup &meas);
   void Reset();
   
   float GetTimeStampROS2(auto msg);
@@ -61,7 +61,8 @@ class ImuProcess {
   sensor_msgs::msg::PointCloud2::ConstPtr last_lidar_;
   sensor_msgs::msg::Imu::ConstPtr last_imu_;
   // ROS2 node for info and publication
-  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("data_process");
+  std::shared_ptr<rclcpp::Node> node_ = rclcpp::Node::make_shared("data_process");
+  
 
   /// For gyroscope integration
   GyrInt gyr_int_;
