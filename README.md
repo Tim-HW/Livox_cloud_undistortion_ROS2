@@ -4,7 +4,7 @@ This project is used for lidar point cloud undistortion. During the recording pr
 <a href="https://docs.ros.org/en/foxy/Installation.html"><img src="https://img.shields.io/badge/ROS2-foxy-orange" /></a>
 <a href="https://docs.ros.org/en/humble/Installation.html"><img src="https://img.shields.io/badge/ROS2-Humble-yellow" /></a>
 <a href="https://github.com/Tim-HW/Livox_cloud_undistortion_ROS2/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" /></a>
-<a href="https://github.com/Tim-HW/Livox_cloud_undistortion_ROS2/blob/main/LICENSE"><img src="https://img.shields.io/badge/Build-failed-red" /></a>
+<a href="https://github.com/Tim-HW/Livox_cloud_undistortion_ROS2/blob/main/LICENSE"><img src="https://img.shields.io/badge/Build-Success-green" /></a>
 
 
 
